@@ -6,6 +6,8 @@ const os = require("node:os");
 const { exec } = require("child_process");
 const { copyFile } = require("fs/promises");
 const  fs  = require("fs");
+const PizZip = require("pizzip");
+const Docxtemplater = require("docxtemplater");
 const dirTemplates = os.homedir() + '/Documents/GitHub/DocumentosPrueba/';
 const Plantillas = os.homedir() + '/Documents/Pruebas/Plantillas/';
 const Temporal = os.homedir() + '/Documents/Pruebas/Tmp/';
@@ -38,8 +40,29 @@ router.post('/api/prueba/', (req, res)=>{
     console.log(req.body);
     const UID = req.body.UID
     const Estudio = req.body.Estudio
-    Copiar(UID, Estudio)
-    exec ("open " + Temporal + UID + '.txt', (error, stdout, stderr) => {
+    //Copiar(UID, Estudio)
+    const content = fs.readFileSync((Plantillas + Estudio + '.docx'),"binary");
+    
+    const zip = new PizZip(content);
+    
+    const doc = new Docxtemplater(zip, {
+        paragraphLoop: true,
+        linebreaks: true,
+    });
+    
+    doc.render({
+        Direccion: "Direccion de prueba",
+        Fecha: "05-12-2022",
+        Hora: "14:30 pm",
+    });
+    const buf = doc.getZip().generate({
+        type: "nodebuffer",
+        compression: "DEFLATE",
+    });
+    fs.writeFileSync(Temporal + UID + '.docx', buf);
+    ////////////
+
+    exec ("open " + Temporal + UID + '.docx', (error, stdout, stderr) => {
         if (error) {
         res.json({
             status: "Not Found",
@@ -55,12 +78,12 @@ router.post('/api/prueba/', (req, res)=>{
     })
     //verCambios(Temporal + UID + '.txt')
     //verCambios2(Temporal)
-    verCambios2(Final)
+    verCambios2(Final, UID + '.docx')
 })
 
 async function Copiar(UID, Estudio){
     try {
-        await copyFile(Plantillas + Estudio + '.txt', Temporal + UID + '.txt')
+        await copyFile(Plantillas + Estudio + '.docx', Temporal + UID + '.docx')
         console.log('Archivo copiado')
     } catch (error) {
         console.log('error')
@@ -74,9 +97,16 @@ function verCambios(UID){
         console.log(`${filename} archivos modificado`)
     })
 }
-function verCambios2(UID){
+function verCambios2(UID, nombre){
     fs.watchFile(UID, () => {
         console.log(`El contenido de la carpeta ${UID} ha cambiado`);
+        if (SubirArchivo( UID + nombre)) {
+            eliminar(UID + nombre)
+            fs.unwatchFile(UID);
+            eliminar(Temporal + nombre)
+        } else {
+            console.log('error al eliminar');
+        }
     });
 }
 function eliminar(UID){
@@ -85,6 +115,8 @@ function eliminar(UID){
 
 function SubirArchivo(Archivo){
     //Metodo para subir archivo a servidor
+    console.log('Archivo enviado')
+    return true;
 }
 
 module.exports = router;
