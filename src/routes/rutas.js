@@ -8,10 +8,9 @@ const { copyFile } = require("fs/promises");
 const  fs  = require("fs");
 const PizZip = require("pizzip");
 const Docxtemplater = require("docxtemplater");
-const dirTemplates = os.homedir() + '/Documents/GitHub/DocumentosPrueba/';
-const Plantillas = os.homedir() + '/Documents/Pruebas/Plantillas/';
-const Temporal = os.homedir() + '/Documents/Pruebas/Tmp/';
-const Final = os.homedir() + '/Documents/Pruebas/Final/';
+const Plantillas = os.homedir() + '/Estudios/Templates/';
+const Temporal = os.homedir() + '/Estudios/Tmp/';
+const Final = os.homedir() + '/Estudios/Final/';
 
 //RUTAS
 router.get('/', (req, res) =>{
@@ -24,6 +23,12 @@ router.post('/', (req, res)=>{
     console.log(req.body);
     res.json({
         message: 'received'
+    })
+})
+
+router.get('/check', (req, res) =>{
+    res.json({
+        status: 'true'
     })
 })
 

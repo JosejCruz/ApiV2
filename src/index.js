@@ -1,6 +1,9 @@
 const { urlencoded } = require('express');
 const express = require('express');
 const app = express();
+//Creando carpetas
+var Carpetas = require('./templates/dir.js')
+Carpetas()
 
 //configuracion
 const puerto = 3000;
