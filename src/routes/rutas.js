@@ -41,7 +41,7 @@ router.get('/api/url/:uid', (req, res) =>{
     })
 })
 
-router.post('/api/prueba/', (req, res)=>{
+router.post('/api/estudio/', (req, res)=>{
     console.log(req.body);
     const UID = req.body.UID
     const Estudio = req.body.Estudio
