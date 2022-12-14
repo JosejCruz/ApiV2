@@ -1,4 +1,6 @@
 {
 	"UID": "61c07fce-aec7-4be4-bac2-ecee83bd27f0",
-	"Estudio": "Prueba - para generar plantilla"
+	"Paciente": "Nombre completo del paciente",
+	"Estudio": "Plantilla",
+	"Access_number": "212315"
 }

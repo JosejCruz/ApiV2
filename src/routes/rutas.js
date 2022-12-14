@@ -1,5 +1,6 @@
 const { Router } = require("express");
 const router = Router();
+const db = require('../database/database.js')
 
 //para envio de archivo
 const FormData = require("form-data");
@@ -37,7 +38,7 @@ router.get("/check", (req, res) => {
 });
 
 // rutas y funciones para manipulacion de archivos
-router.get("/api/url/:uid", (req, res) => {
+router.get("/url/:uid", (req, res) => {
   var data = req.params.uid;
   console.log(data);
   res.json({
@@ -45,11 +46,21 @@ router.get("/api/url/:uid", (req, res) => {
   });
 });
 
+router.get('/estudio/:id', (req, res)=>{
+  var id = req.params.id;
+  ObtenerId(id,res)
+  console.log(id)
+})
+
+router.get('/estudio', (req, res)=>{
+  ObtenerTodo(res)
+})
+
 router.post("/estudio", (req, res) => {
   console.log(req.body);
   const UID = req.body.UID;
   const Estudio = req.body.Estudio;
-  //Copiar(UID, Estudio)
+  const Paciente = req.body.Paciente;
   const content = fs.readFileSync(Plantillas + Estudio + ".docx", "binary");
 
   const zip = new PizZip(content);
@@ -60,9 +71,9 @@ router.post("/estudio", (req, res) => {
   });
 
   doc.render({
-    Direccion: "Direccion de prueba",
-    Fecha: "05-12-2022",
-    Hora: "14:30 pm",
+    UID,
+    Paciente,
+    Estudio
   });
   const buf = doc.getZip().generate({
     type: "nodebuffer",
@@ -85,11 +96,82 @@ router.post("/estudio", (req, res) => {
       status: "Open",
     });
   });
-  //verCambios(Temporal + UID + '.txt')
-  //verCambios2(Temporal)
-  verCambios2(Final, UID + ".docx");
+  EscucharCambios(Final, UID + ".docx");
 });
 
+function EscucharCambios(UID, nombre) {
+  fs.watchFile(UID, () => {
+    console.log(`El contenido de la carpeta ${UID} ha cambiado`);
+    const form = new FormData();
+    form.append("file", fs.createReadStream(UID + nombre));
+    axios
+    .post("https://file.io", form)
+    .then((res) =>{
+      if (res.data.success === true) {
+        eliminar(UID + nombre);
+        fs.unwatchFile(UID);
+        eliminar(Temporal + nombre);
+        console.log("Archivo enviado");
+      } else {
+        console.log("error al eliminar");
+        console.log('error al subir archivo')
+      }
+      console.log(res.data)
+    })
+    .catch((err) => {
+      console.log(err)
+    });
+  });
+}
+function eliminar(UID) {
+  fs.unlinkSync(UID);
+}
+
+//Almacenamiento en Base de Datos
+
+function ObtenerTodo(res) {
+  var query = 'SELECT * FROM Registro'
+  var params = []
+  db.all(query, params,(err, rows)=>{
+    if (err) {
+      res.json({
+        message: 'error'
+      })
+    }
+    res.json({
+      message: 'success',
+      data: rows
+    })
+  })
+}
+
+function ObtenerId(Id, res) {
+  var query = 'SELECT * FROM Registro WHERE Id_Registro = ?';
+  var params = Id;
+  db.get(query, params, (err, rows)=>{
+    try {
+      if (err) {
+        res.json({
+          message: 'error'
+        })
+      }
+      if (rows != null) {
+        res.json({
+          message: 'success',
+          data: rows
+        })
+      }else{
+        res.json({
+          message: 'Not Found',
+        })
+      }
+    } catch (error) {
+      console.log(error)
+    }
+  })
+}
+
+//Metodos Descartados
 async function Copiar(UID, Estudio) {
   try {
     await copyFile(Plantillas + Estudio + ".docx", Temporal + UID + ".docx");
@@ -106,49 +188,20 @@ function verCambios(UID) {
     console.log(`${filename} archivos modificado`);
   });
 }
-function verCambios2(UID, nombre) {
-  fs.watchFile(UID, () => {
-    console.log(`El contenido de la carpeta ${UID} ha cambiado`);
-    const form = new FormData();
-  form.append("file", fs.createReadStream(UID + nombre));
-  axios
-  .post("https://file.io", form)
-  .then((res) =>{
-      if (res.data.success === true) {
-          eliminar(UID + nombre);
-          fs.unwatchFile(UID);
-          eliminar(Temporal + nombre);
-          console.log("Archivo enviado");
-        } else {
-          console.log("error al eliminar");
-          console.log('error al subir archivo')
-        }
-        console.log(res.data)
-    })
-    .catch((err) => {
-        console.log(err)
-    });
-  });
-}
-function eliminar(UID) {
-  fs.unlinkSync(UID);
-}
-
-//Metodo para subir archivo a servidor
 function SubirArchivo(Archivo) {
   const form = new FormData();
   form.append("file", fs.createReadStream(Archivo));
   console.log("Archivo enviado");
   axios
-    .post("https://file.io", form)
-    .then((res) =>{
-        console.log(res.data)
-        return true;
-    })
-    .catch((err) => {
-        console.log(err)
-        return false;
-    });
+  .post("https://file.io", form)
+  .then((res) =>{
+    console.log(res.data)
+    return true;
+  })
+  .catch((err) => {
+    console.log(err)
+    return false;
+  });
 }
 
 module.exports = router;
