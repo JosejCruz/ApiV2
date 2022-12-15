@@ -56,11 +56,17 @@ router.get('/estudio', (req, res)=>{
   ObtenerTodo(res)
 })
 
+router.get('/Paciente', (req, res)=>{
+  var Paciente = req.body.Paciente
+  ObtenerNombre(Paciente, res)
+})
+
 router.post("/estudio", (req, res) => {
   console.log(req.body);
   const UID = req.body.UID;
   const Estudio = req.body.Estudio;
   const Paciente = req.body.Paciente;
+  const Access_number = req.body.Access_number;
   const content = fs.readFileSync(Plantillas + Estudio + ".docx", "binary");
 
   const zip = new PizZip(content);
@@ -97,6 +103,7 @@ router.post("/estudio", (req, res) => {
     });
   });
   EscucharCambios(Final, UID + ".docx");
+  RegistrarDatos(Paciente, Estudio, UID, Access_number)
 });
 
 function EscucharCambios(UID, nombre) {
@@ -112,9 +119,6 @@ function EscucharCambios(UID, nombre) {
         fs.unwatchFile(UID);
         eliminar(Temporal + nombre);
         console.log("Archivo enviado");
-      } else {
-        console.log("error al eliminar");
-        console.log('error al subir archivo')
       }
       console.log(res.data)
     })
@@ -128,6 +132,15 @@ function eliminar(UID) {
 }
 
 //Almacenamiento en Base de Datos
+
+function RegistrarDatos(Paciente, Estudio, UID, Access_number) {
+  //registrar
+  var fecha = new Date();
+  var FechaHoy = fecha.getDate() + '-' + (fecha.getMonth() + 1) + '-' + fecha.getFullYear();
+  var Hora = fecha.getHours() + ':' + fecha.getMinutes();
+  var query = "INSERT INTO Registro (Fecha, Hora, Paciente, Estudio, UID, Access_number) VALUES (?,?,?,?,?,?)";
+  db.run(query, [FechaHoy, Hora, Paciente, Estudio, UID, Access_number]);
+}
 
 function ObtenerTodo(res) {
   var query = 'SELECT * FROM Registro'
@@ -148,6 +161,32 @@ function ObtenerTodo(res) {
 function ObtenerId(Id, res) {
   var query = 'SELECT * FROM Registro WHERE Id_Registro = ?';
   var params = Id;
+  db.get(query, params, (err, rows)=>{
+    try {
+      if (err) {
+        res.json({
+          message: 'error'
+        })
+      }
+      if (rows != null) {
+        res.json({
+          message: 'success',
+          data: rows
+        })
+      }else{
+        res.json({
+          message: 'Not Found',
+        })
+      }
+    } catch (error) {
+      console.log(error)
+    }
+  })
+}
+
+function ObtenerNombre(Paciente, res) {
+  var query = 'SELECT * FROM Registro WHERE Paciente = ?';
+  var params = Paciente;
   db.get(query, params, (err, rows)=>{
     try {
       if (err) {

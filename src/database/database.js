@@ -28,8 +28,14 @@ let db = new sqlite3.Database(DBSOURCE, (err) => {
           var insert =
             "INSERT INTO Registro (Fecha, Hora, Paciente, Estudio, UID, Access_number) VALUES (?,?,?,?,?,?)";
           //db.run(insert, ["admin", "admin@example.com", md5("admin123456")]);
-          db.run(insert, ["21-12-2022", "13:00", "Paciente Prueba", "Estudio de Prueba", "61c07fce-aec7-4be4-bac2-ecee83bd27f0", "1546545"]);
+          //db.run(insert, ["21-12-2022", "13:00", "Paciente Prueba", "Estudio de Prueba", "61c07fce-aec7-4be4-bac2-ecee83bd27f0", "1546545"]);
           console.log('Datos insertados')
+          var fecha = new Date();
+          console.log(fecha.getDate())
+          console.log(fecha.getMonth() + 1)
+          console.log(fecha.getFullYear())
+          console.log(fecha.getHours())
+          console.log(fecha.getMinutes())
         }
       }
     );
