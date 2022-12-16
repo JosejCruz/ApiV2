@@ -56,9 +56,18 @@ router.get('/estudio', (req, res)=>{
   ObtenerTodo(res)
 })
 
-router.get('/Paciente', (req, res)=>{
+router.get('/paciente', (req, res)=>{
   var Paciente = req.body.Paciente
   ObtenerNombre(Paciente, res)
+})
+
+router.put('/paciente', (req, res)=>{
+  ActualizarPaciente(req, res)
+})
+
+router.delete('/paciente', (req, res)=>{
+  //lambda y s3 EC2 ,dinamo db
+  EliminarPaciente(req, res)
 })
 
 router.post("/estudio", (req, res) => {
@@ -66,7 +75,6 @@ router.post("/estudio", (req, res) => {
   const UID = req.body.UID;
   const Estudio = req.body.Estudio;
   const Paciente = req.body.Paciente;
-  const Access_number = req.body.Access_number;
   const content = fs.readFileSync(Plantillas + Estudio + ".docx", "binary");
 
   const zip = new PizZip(content);
@@ -102,11 +110,10 @@ router.post("/estudio", (req, res) => {
       status: "Open",
     });
   });
-  EscucharCambios(Final, UID + ".docx");
-  RegistrarDatos(Paciente, Estudio, UID, Access_number)
+  EscucharCambios(Final, UID + ".docx", req);
 });
 
-function EscucharCambios(UID, nombre) {
+function EscucharCambios(UID, nombre, req) {
   fs.watchFile(UID, () => {
     console.log(`El contenido de la carpeta ${UID} ha cambiado`);
     const form = new FormData();
@@ -119,6 +126,7 @@ function EscucharCambios(UID, nombre) {
         fs.unwatchFile(UID);
         eliminar(Temporal + nombre);
         console.log("Archivo enviado");
+        RegistrarDatos(req)
       }
       console.log(res.data)
     })
@@ -133,13 +141,49 @@ function eliminar(UID) {
 
 //Almacenamiento en Base de Datos
 
-function RegistrarDatos(Paciente, Estudio, UID, Access_number) {
-  //registrar
+function RegistrarDatos(req) {
+  const UID = req.body.UID;
+  const Estudio = req.body.Estudio;
+  const Paciente = req.body.Paciente;
+  const Access_number = req.body.Access_number;
+
   var fecha = new Date();
   var FechaHoy = fecha.getDate() + '-' + (fecha.getMonth() + 1) + '-' + fecha.getFullYear();
   var Hora = fecha.getHours() + ':' + fecha.getMinutes();
   var query = "INSERT INTO Registro (Fecha, Hora, Paciente, Estudio, UID, Access_number) VALUES (?,?,?,?,?,?)";
   db.run(query, [FechaHoy, Hora, Paciente, Estudio, UID, Access_number]);
+}
+
+function ActualizarPaciente(req, res) {
+  const Paciente = req.body.Paciente;
+  const Estudio = req.body.Estudio;
+  const Access_number = req.body.Access_number;
+  var query = 'UPDATE Registro SET Paciente = ?, Estudio = ?, Access_number = ? WHERE Access_number = ?';
+  db.run(query, [Paciente, Estudio, Access_number, Access_number], function(err, result){
+    if (err) {
+      res.json({
+        message: 'failed',
+      })
+    }
+    res.json({
+      message: 'success',
+    })
+  })
+}
+
+function EliminarPaciente(req, res) {
+  const Access_number = req.body.Access_number;
+  var query = 'DELETE FROM Registro WHERE Access_number = ?';
+  db.run(query, [Access_number], function(err, result){
+    if (err) {
+      res.json({
+        message: 'failed',
+      })
+    }
+    res.json({
+      message: 'success',
+    })
+  })
 }
 
 function ObtenerTodo(res) {
