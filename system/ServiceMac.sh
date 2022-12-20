@@ -1,1 +1,2 @@
-node Documents/GitHub/ApiV2/src/index.js
+cd $HOME
+node ApiV2/src/index.js
